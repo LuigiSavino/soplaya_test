@@ -1,14 +1,14 @@
 import csv
 from datetime import datetime
 from django.core.management.base import BaseCommand
-from soplaya_reports.api.models import Report
+from api.models import Report
 
 
 class Command(BaseCommand):
     help = 'Import data from dataset.csv'
 
     def handle(self, *args, **kwargs):
-        with open('dataset.csv', 'r') as file:
+        with open('data/dataset.csv', 'r') as file:
             reader = csv.DictReader(file)
             for row in reader:
                 date = datetime.strptime(row['date'], '%Y-%m-%d').date()
