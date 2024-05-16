@@ -1,6 +1,8 @@
 from django.db.models import Sum, F
-from rest_framework import viewsets, filters, pagination
+from rest_framework import viewsets, filters, pagination, status
+from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+
 from .models import Report
 from .serializers import ReportSerializer
 
@@ -17,7 +19,8 @@ class ReportViewSet(viewsets.ModelViewSet):
 
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter,
+                       DjangoFilterBackend]
     filterset_fields = ['restaurant', 'date']
     ordering_fields = ['date', 'restaurant', 'total_planned_hours',
                        'total_actual_hours', 'total_budget', 'total_sells',
@@ -25,8 +28,7 @@ class ReportViewSet(viewsets.ModelViewSet):
     pagination_class = CustomPagination
 
     def get_queryset(self):
-        """Restituisce i report filtrati e raggruppati per data e ristorante con
-        aggregazione SUM."""
+        """Restituisce i report filtrati."""
 
         queryset = super().get_queryset()
 
@@ -43,9 +45,14 @@ class ReportViewSet(viewsets.ModelViewSet):
             total_planned_hours=Sum('planned_hours'),
             total_actual_hours=Sum('actual_hours'),
             total_budget=Sum('budget'),
-            total_sells=Sum('sells'),
-            total_hours_difference=Sum(F('planned_hours') - F('actual_hours')),
-            total_budget_difference=Sum(F('budget') - F('sells'))
+            total_sells=Sum('sells')
         )
 
+        # Calculating additional fields
+        for item in queryset:
+            item['total_hours_difference'] = item['total_planned_hours'] - item[
+                'total_actual_hours']
+            item['total_budget_difference'] = item['total_budget'] - item['total_sells']
+
         return queryset
+
